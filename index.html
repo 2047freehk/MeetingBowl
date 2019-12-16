@@ -1,0 +1,538 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>光復香港</title>
+
+<style>
+*
+{
+  padding: 0px;
+  margin: 0px;
+}
+
+#stage 
+{
+  position: relative;
+  width: 384px;
+  height: 384px;
+  margin: 10px;
+  background-image: url("images/newbackground.png");
+}
+
+.cell
+{
+  display: block;
+  position: absolute;
+  width: 64px;
+  height: 64px;
+}
+
+#game
+{
+  width: 404px;
+  height: 640px;
+  background-color: white;
+  border: 1px dashed black;
+}
+
+@font-face 
+{
+  font-family: PMingLiu, mingliu, "細明體_HKSCS-ExtB", "Ming(for ISO10646)ExtB", Arial, Helvetica, sans-serif;
+}
+
+h1
+{
+  text-align: center;
+  font-family: PiratesWriters;
+  font-size: 50px;
+}
+
+p
+{
+  font-family: PiratesWriters;
+  font-size: 20px;
+  width: 384px;
+  padding: 10px;
+}
+
+</style>
+
+<section id="game">
+  <h1>光復香港</h1>
+  <div id="stage"></div>
+  <p id="gstatus"></p>
+  <p id="output"></p> 
+  
+
+</section>
+<audio controls autoplay loop>
+<source src="music/background.mp3" type="audio/mpeg">
+Your browser does not support the audio element.
+</audio>
+<br>背景音樂：願榮光歸香港 (DGX)
+<script>
+
+//Get a reference to the stage and output
+var stage = document.querySelector("#stage");
+var output = document.querySelector("#output");
+var gstatus = document.querySelector("#gstatus");
+
+//Add a keyboard listener
+window.addEventListener("keydown", keydownHandler, false);
+
+//The game map
+var map =
+[
+  [0, 2, 0, 1, 2, 3],
+  [0, 0, 0, 0, 1, 2],
+  [0, 1, 0, 0, 0, 1],
+  [0, 0, 0, 0, 0, 0],
+  [0, 2, 0, 1, 0, 2],
+  [0, 0, 0, 0, 0, 0]
+];
+
+//The game objects map
+var gameObjects =
+[
+  [0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0],
+  [0, 0, 5, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0],
+  [4, 0, 0, 0, 0, 0]
+];
+
+//Map code
+var WATER = 0;
+var CRIMINAL = 1;
+var POLICE = 2;
+var HOME = 3;
+var HERO = 4;
+var MONSTER = 5;
+
+//The size of each cell
+var SIZE = 64;
+
+//The number of rows and columns
+var ROWS = map.length;
+var COLUMNS = map[0].length;
+
+//Find the hero's and monster's start positions
+var heroRow;
+var heroColumn;
+var monsterRow;
+var monsterColumn;
+
+for(var row = 0; row < ROWS; row++) 
+{	
+  for(var column = 0; column < COLUMNS; column++) 
+  {
+    if(gameObjects[row][column] === HERO)
+    { 
+      heroRow = row;
+      heroColumn = column;
+    }
+    if(gameObjects[row][column] === MONSTER)
+    { 
+      monsterRow = row;
+      monsterColumn = column;
+    }
+  }
+}
+
+//Arrow key codes
+var UP = 38;
+var DOWN = 40;
+var RIGHT = 39;
+var LEFT = 37;
+
+//The game variables
+var support = 10;
+var iq = 10;
+var courage = 10;
+var gameMessage = "按上下左右移動義士，運用智慧與勇氣，增強民意，直到黎明來到，完成煲底之約.";
+
+render();
+
+
+
+function keydownHandler(event)
+{ 
+  switch(event.keyCode)
+  {
+    case UP:
+	    if(heroRow > 0)
+	    {
+	      //Clear the hero's current cell
+	      gameObjects[heroRow][heroColumn] = 0;
+	      
+	      //Subract 1 from the hero's row
+	      heroRow--;
+	      
+	      //Apply the hero's new updated position to the array
+	      gameObjects[heroRow][heroColumn] = HERO;
+	    }
+	    break;
+	  
+	  case DOWN:
+	    if(heroRow < ROWS - 1)
+	    {
+	      gameObjects[heroRow][heroColumn] = 0;
+	      heroRow++;
+	      gameObjects[heroRow][heroColumn] = HERO;
+	    }
+	    break;
+	    
+	  case LEFT:
+	    if(heroColumn > 0)
+	    {
+	      gameObjects[heroRow][heroColumn] = 0;
+	      heroColumn--;
+	      gameObjects[heroRow][heroColumn] = HERO;
+	    }
+	    break;  
+	    
+	  case RIGHT:
+	    if(heroColumn < COLUMNS - 1)
+	    {
+	      gameObjects[heroRow][heroColumn] = 0;
+	      heroColumn++;
+	      gameObjects[heroRow][heroColumn] = HERO;
+	    }
+	    break; 
+  }
+  
+  //find out what kind of cell the hero is on
+  switch(map[heroRow][heroColumn])
+  {
+    case WATER:
+      gameMessage = "Be water！香港人 加油！五大訴求 缺一不可！"
+      break;
+    
+    case POLICE:
+      fightPolice();
+      break; 
+    
+    case CRIMINAL:
+      fightCriminal();
+      break; 
+      
+    case HOME:
+      endGame();
+      break;      
+  }
+  
+  //Move the monster
+  moveMonster();
+  
+  
+  //Find out if the hero is touching the monster
+  if(gameObjects[heroRow][heroColumn] === MONSTER)
+  {
+    endGame();
+  }
+  
+  //Subtract some support each turn
+  support--;
+  
+  //Find out if the hero has run out of support or iq
+  if(support <= 0 || iq <= 0 || courage <=0)
+  {
+    endGame();
+  }
+  
+  //Render the game
+  render();
+}
+
+function moveMonster()
+{
+  //The 4 possible directions that the monster can move
+  var UP = 1;
+  var DOWN = 2;
+  var LEFT = 3;
+  var RIGHT = 4;
+  
+  //An array to store the valid direction that
+  //the monster is allowed to move in
+  var validDirections = [];
+  
+  //The final direction that the monster will move in
+  var direction = undefined;
+  
+  //Find out what kinds of things are in the cells 
+  //that surround the monster. If the cells contain water,
+  //push the corresponding direction into the validDirections array
+  if(monsterRow > 0)
+  {
+    var thingAbove = map[monsterRow - 1][monsterColumn];
+    if(thingAbove === WATER)
+	  {
+	    validDirections.push(UP);
+	  }
+  }
+  if(monsterRow < ROWS - 1)
+  { 
+    var thingBelow = map[monsterRow + 1][monsterColumn];
+    if(thingBelow === WATER)
+	  {
+	    validDirections.push(DOWN);
+	  }
+  }
+  if(monsterColumn > 0)
+  {
+    var thingToTheLeft = map[monsterRow][monsterColumn - 1];
+    if(thingToTheLeft === WATER)
+	  {
+	    validDirections.push(LEFT);
+	  }
+  } 
+  if(monsterColumn < COLUMNS - 1)
+  {
+    var thingToTheRight = map[monsterRow][monsterColumn + 1];
+    if(thingToTheRight === WATER)
+	  {
+	    validDirections.push(RIGHT);
+	  }
+  } 
+  
+  //The validDirections array now contains 0 to 4 directions that the 
+  //contain WATER cells. Which of those directions will the monster
+  //choose to move in?
+  
+  //If a valid direction was found, Randomly choose one of the 
+  //possible directions and assign it to the direction variable
+  if(validDirections.length !== 0)
+  {
+    var randomNumber = Math.floor(Math.random() * validDirections.length);
+    direction = validDirections[randomNumber];
+  }
+  
+  //Move the monster in the chosen direction
+  switch(direction)
+  {
+    case UP:
+      //Clear the monster's current cell
+		  gameObjects[monsterRow][monsterColumn] = 0;
+		  //Subtract 1 from the monster's row
+		  monsterRow--; 
+		  //Apply the monster's new updated position to the array
+		  gameObjects[monsterRow][monsterColumn] = MONSTER;
+		  break;
+	  
+	  case DOWN:
+	    gameObjects[monsterRow][monsterColumn] = 0;
+		  monsterRow++;
+		  gameObjects[monsterRow][monsterColumn] = MONSTER;
+	    break;
+	  
+	  case LEFT:
+	    gameObjects[monsterRow][monsterColumn] = 0;
+		  monsterColumn--;
+		  gameObjects[monsterRow][monsterColumn] = MONSTER;
+	    break;
+	 
+	 case RIGHT:
+	    gameObjects[monsterRow][monsterColumn] = 0;
+		  monsterColumn++;
+		  gameObjects[monsterRow][monsterColumn] = MONSTER;
+  }
+}
+
+function fightCriminal()
+{
+   
+  //The heros strength
+  var heroStrength = Math.ceil((support + courage) / 1.7);
+  
+  //A random number between 1 and the hero's strength
+  var criminalStrength = Math.ceil(Math.random() * heroStrength * 1.7);
+  
+  if(criminalStrength > heroStrength)
+  {
+    //The criminal ransack the hero
+    var stolencourage = Math.round(criminalStrength / 2);
+    courage -= stolencourage;
+    
+    //Give the player some courage for trying  
+    courage += 1;
+    
+    //Update the game message
+    gameMessage 
+      = "義士戰敗了，勇氣下降了 " + stolencourage + "點。<br>"
+    //  + " 義士的戰鬥力: " + heroStrength 
+    //  + " 警察的戰鬥力: " + criminalStrength ;
+  }
+  else
+  {
+    //You win the polices' iq
+    var stolencourage = Math.round(criminalStrength / 2);
+    courage += stolencourage;
+    
+    //Add some courage  
+    courage += 2;
+    support += 4;   
+    //Update the game message
+    gameMessage 
+      = "義士戰勝了黑社會，勇氣上升了 " + stolencourage + "點<br>"
+    //  + " 義士的戰鬥力: " + heroStrength 
+    //  + " 警察的戰鬥力: " + criminalStrength;
+  } 
+}
+
+// police
+function fightPolice()
+{
+  
+  //The heros strength
+  var heroStrength = Math.ceil((support + iq) / 2);
+  
+  //A random number between 1 and the hero's strength
+  var policeStrength = Math.ceil(Math.random() * heroStrength * 2);
+  
+  if(policeStrength > heroStrength)
+  {
+    //The polices ransack the hero
+    var stoleniq = Math.round(policeStrength / 2);
+    iq -= stoleniq;
+    
+    //Give the player some iq for trying  
+    iq += 1;
+    
+    //Update the game message
+    gameMessage 
+      = "義士戰敗了，智慧下降了 " + stoleniq + "點。<br>"
+    //  + " 義士的戰鬥力: " + heroStrength 
+    //  + " 警察的戰鬥力: " + policeStrength ;
+  }
+  else
+  {
+    //You win the polices' iq
+    var policeiq = Math.round(policeStrength / 2);
+    iq += policeiq;
+    
+    //Add some iq  
+    iq += 2;
+    //Add some support  
+    support += 3;   
+    //Update the game message
+    gameMessage 
+      = "義士戰勝了，智慧上升了 " + policeiq + "點。<br>"
+    //  + " 義士的戰鬥力: " + heroStrength 
+    //  + " 警察的戰鬥力: " + policeStrength ;
+  } 
+}
+
+function endGame()
+{
+  if(map[heroRow][heroColumn] === HOME)
+  {
+    //Calculate the score
+    var score = support + iq + courage;
+    
+    //Display the game message
+    gameMessage 
+      = "你完成了煲底之約！ 光復香港 時代革命! " + "<br><br>最後成績: " + score; 
+  }
+  else if(gameObjects[heroRow][heroColumn] === MONSTER)
+  {
+    gameMessage 
+      = "你被林奠送中了！";
+  }
+  else
+  {
+    //Display the game message
+    if(iq <= 0)
+    {
+      gameMessage += "<br>你被憤怒戰勝了!"; 
+    }
+    if(courage <= 0)
+    {
+      gameMessage += "<br>勇和割席了！"; 
+    }
+    if(support <= 0)
+    {
+	 gameMessage += "<br>輸民意了!"; 
+	}
+  }
+  
+  //Remove the keyboard listener to end the game
+  window.removeEventListener("keydown", keydownHandler, false);
+}
+
+function render()
+{
+  //Clear the stage of img cells
+  //from the previous turn
+  
+  if(stage.hasChildNodes())
+  {
+    for(var i = 0; i < ROWS * COLUMNS; i++) 
+    {	 
+      stage.removeChild(stage.firstChild);
+    }
+  }
+  
+  //Render the game by looping through the map arrays
+  for(var row = 0; row < ROWS; row++) 
+  {	
+    for(var column = 0; column < COLUMNS; column++) 
+    { 
+      //Create a img tag called cell
+      var cell = document.createElement("img");
+
+      //Set it's CSS class to "cell"
+      cell.setAttribute("class", "cell");
+
+      //Add the img tag to the <div id="stage"> tag
+      stage.appendChild(cell);
+
+      //Find the correct image for this map cell
+      switch(map[row][column])
+      {
+        case WATER:
+          cell.src = "images/water.png";
+          break;
+
+        case CRIMINAL:
+          cell.src = "images/criminal.png";
+          break; 
+
+        case POLICE:
+          cell.src = "images/police.png";
+          break; 
+
+        case HOME:
+          cell.src = "images/legco.png";
+          break;   
+      }  
+      
+      //Add the hero and monster from the gameObjects array
+	    switch(gameObjects[row][column])
+	    {
+	      case HERO:
+	        cell.src = "images/hero.png";
+	        break;   
+	        
+	      case MONSTER:
+	        cell.src = "images/devil.png";
+	        break;  
+	    } 
+  
+      //Position the cell 
+      cell.style.top = row * SIZE + "px";
+      cell.style.left = column * SIZE + "px";
+    }
+  }
+  
+  //Display the game message
+	output.innerHTML = gameMessage;
+	
+  //Display the player's support, iq, and courage
+	gstatus.innerHTML = "智慧: " + iq + ", 勇氣: " + courage + ", 民意: " + support;  
+}
+
+
+
+
+</script>
+
