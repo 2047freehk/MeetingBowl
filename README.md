@@ -2,6 +2,8 @@
 
 This game is to honor freedom fighters in Hong Kong.
 
+Go to the game: https://2047freehk.github.io/meetingbowl/
+
 ![Image description](gamescreen.png)
 
 # Acknowledgement
