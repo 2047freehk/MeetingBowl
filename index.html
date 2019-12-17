@@ -1,6 +1,6 @@
 <!doctype html>
 <meta charset="utf-8">
-<title>光復香港</title>
+<title>煲底之約</title>
 
 <style>
 *
@@ -57,7 +57,7 @@ p
 </style>
 
 <section id="game">
-  <h1>光復香港</h1>
+  <h1>煲底之約</h1>
   <div id="stage"></div>
   <p id="gstatus"></p>
   <p id="output"></p> 
@@ -143,7 +143,7 @@ var LEFT = 37;
 var support = 10;
 var iq = 10;
 var courage = 10;
-var gameMessage = "按上下左右移動義士，運用智慧與勇氣，增強民意，直到黎明來到，完成煲底之約.";
+var gameMessage = "按上下左右移動義士完成煲底之約，運用智慧與勇氣，增強民意，直到黎明來到.";
 
 render();
 
@@ -354,7 +354,7 @@ function fightCriminal()
     gameMessage 
       = "義士戰敗了，勇氣下降了 " + stolencourage + "點。<br>"
     //  + " 義士的戰鬥力: " + heroStrength 
-    //  + " 警察的戰鬥力: " + criminalStrength ;
+    //  + " 公安的戰鬥力: " + criminalStrength ;
   }
   else
   {
@@ -369,7 +369,7 @@ function fightCriminal()
     gameMessage 
       = "義士戰勝了黑社會，勇氣上升了 " + stolencourage + "點<br>"
     //  + " 義士的戰鬥力: " + heroStrength 
-    //  + " 警察的戰鬥力: " + criminalStrength;
+    //  + " 公安的戰鬥力: " + criminalStrength;
   } 
 }
 
@@ -396,7 +396,7 @@ function fightPolice()
     gameMessage 
       = "義士戰敗了，智慧下降了 " + stoleniq + "點。<br>"
     //  + " 義士的戰鬥力: " + heroStrength 
-    //  + " 警察的戰鬥力: " + policeStrength ;
+    //  + " 公安的戰鬥力: " + policeStrength ;
   }
   else
   {
@@ -410,9 +410,9 @@ function fightPolice()
     support += 3;   
     //Update the game message
     gameMessage 
-      = "義士戰勝了，智慧上升了 " + policeiq + "點。<br>"
+      = "義士戰勝了公安，智慧上升了 " + policeiq + "點。<br>"
     //  + " 義士的戰鬥力: " + heroStrength 
-    //  + " 警察的戰鬥力: " + policeStrength ;
+    //  + " 公安的戰鬥力: " + policeStrength ;
   } 
 }
 
